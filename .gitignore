@@ -1,0 +1,12 @@
+# Build output
+ios/build/
+ios/DerivedData/
+**/*.xcuserdata*/
+.DS_Store
+
+# Node
+worker/node_modules/
+
+# Secrets / local
+worker/.dev.vars
+.wrangler/
