@@ -1,0 +1,19 @@
+{
+  "name": "jobpilot-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "node test/sweep.test.ts",
+    "test:generate": "node test/generate.test.ts",
+    "test:validate": "node test/no_invented_content.test.ts",
+    "bundle-assets": "node scripts/bundle-assets.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/puppeteer": "^1.3.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
