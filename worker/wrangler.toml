@@ -1,0 +1,37 @@
+name = "jobpilot"
+main = "src/index.ts"
+compatibility_date = "2026-08-10"
+
+# Tier 1/2 hourly. Tier 3 every 2h, offset to :30 so it never shares a minute
+# with the hourly cron (they use disjoint KV keys, the offset is belt-and-braces).
+# The handler skips tier-3 ticks during quiet hours (10pm-6am CST), so it only
+# runs in the 6am-10pm window — load-bearing for the 600s/day browser budget.
+[triggers]
+crons = ["0 * * * *", "30 */2 * * *"]
+
+# Browser Rendering (free tier: 10 min/day, 3 concurrent, 60s/session). Tier 3 only.
+[browser]
+binding = "BROWSER"
+
+[vars]
+# DISCORD_CHANNEL_ID set here after you create the bot + channel.
+# DISCORD_BOT_TOKEN is a secret: `wrangler secret put DISCORD_BOT_TOKEN`
+WORKER_BASE = "https://jobpilot.esshaan.workers.dev"
+DISCORD_CHANNEL_ID = "1536749104938487879"
+
+# A3 /generate — BYO-key LLM (owner-gated). Non-secret config here; the KEY is a
+# secret: `wrangler secret put LLM_API_KEY`. /generate returns 501 until it's set.
+#   LLM_PROVIDER = "openai"   # or "anthropic"
+#   LLM_BASE_URL = "https://api.openai.com/v1"   # or a DeepSeek/Groq/Ollama base
+#   LLM_MODEL    = "gpt-4o"   # or claude-sonnet-4-5, deepseek-chat, ...
+#   LLM_REVIEW   = "1"        # enable the reviewer second pass (doubles cost)
+LLM_PROVIDER = "openai"
+# Google Gemini via its OpenAI-compatible endpoint (free tier). Key is a secret.
+LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+LLM_MODEL = "gemini-3.6-flash"
+
+# Local `wrangler dev` uses a local KV automatically. Replace id after:
+#   wrangler kv namespace create JOBS_KV
+[[kv_namespaces]]
+binding = "JOBS_KV"
+id = "aad48084d7dd42ca8346b3981b5d0afc"
