@@ -1,0 +1,31 @@
+name: JobPilot
+options:
+  bundleIdPrefix: com.eshaan
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  JobPilot:
+    type: application
+    platform: iOS
+    sources:
+      - path: JobPilot
+        excludes: [busytex]
+      - path: JobPilot/busytex
+        type: folder
+    info:
+      path: JobPilot/Info.plist
+      properties:
+        CFBundleDisplayName: JobPilot
+        UILaunchStoryboardName: LaunchScreen
+        CFBundleURLTypes:
+          - CFBundleURLName: com.eshaan.jobpilot
+            CFBundleURLSchemes: [jobpilot]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.eshaan.jobpilot
+        # Device signing. Automatic signing with your free personal team. Set
+        # DEVELOPMENT_TEAM to your 10-char Team ID (Xcode > Settings > Accounts).
+        # Kept here (not the Xcode UI) so `xcodegen generate` doesn't wipe it.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "A7249ZGTVA"
+        CODE_SIGNING_ALLOWED: "YES"
