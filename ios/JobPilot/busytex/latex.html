@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><title>busytex engine</title></head>
+<body>
+<script>
+// On-device pdfLaTeX via busytex (WASM). Assets are served from the app bundle
+// through a WKURLSchemeHandler; the .tex comes in from Swift, the PDF goes back
+// as base64 over webkit.messageHandlers.busytex.
+const send = m => window.webkit.messageHandlers.busytex.postMessage(m);
+
+async function fetchBytes(p){ const r = await fetch(p); return new Uint8Array(await r.arrayBuffer()); }
+
+// Compile one .tex string. Fresh Worker (and thus fresh WASM module) per call.
+window.compileResume = async function(texSource){
+  try {
+    const manifest = await (await fetch('manifest.json')).json();  // trimmed texmf tree
+    const files = [];
+    for(const p of manifest) files.push({ path: p, contents: await fetchBytes(p) });
+    files.push({ path: 'pdflatex.fmt', contents: await fetchBytes('pdflatex.fmt') });  // format
+    files.push({ path: 'resume.tex', contents: texSource });
+
+    const w = new Worker('busytex_worker.js');
+    const t0 = performance.now();
+    w.onmessage = ({data}) => {
+      if(data.exception){ send({error: data.exception}); w.terminate(); return; }
+      if('pdf' in data){
+        const ms = Math.round(performance.now() - t0);
+        if(data.pdf && data.pdf.length){
+          let bin=''; const u=data.pdf; for(let i=0;i<u.length;i++) bin+=String.fromCharCode(u[i]);
+          send({ pdf: btoa(bin), bytes: u.length, exit: data.exit_code, ms });
+        } else {
+          send({ error: 'no PDF produced (exit '+data.exit_code+')', log: (data.log||'').slice(-2000) });
+        }
+        w.terminate();
+      }
+    };
+    // Empty preload: no bundled data package. Format + texmf supplied as files.
+    w.postMessage({ busytex_js:'busytex.js', busytex_wasm:'busytex.wasm',
+      data_packages_js:[], preload_data_packages_js:[], texmf_local:['texmf'], preload:true, trim:true });
+    w.postMessage({ files, main_tex_path:'resume.tex', bibtex:false, verbose:'silent', driver:'pdftex_bibtex8', data_packages_js:[] });
+  } catch(e){ send({error: String(e) + (e.stack ? '\n'+e.stack : '')}); }
+};
+
+send({ready: true});
+</script>
+</body></html>

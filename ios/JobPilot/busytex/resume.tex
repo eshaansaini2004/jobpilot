@@ -1,0 +1,87 @@
+\documentclass[10pt, letterpaper]{article}
+
+\usepackage[top=0.25in, bottom=0.3in, left=0.5in, right=0.5in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{parskip}
+
+\pagestyle{empty}
+
+\titleformat{\section}
+  {\bfseries\normalsize}
+  {}{0em}{}
+  [\vspace{-6pt}\rule{\linewidth}{0.4pt}]
+\titlespacing{\section}{0pt}{3pt}{1pt}
+
+\setlist[itemize]{
+  noitemsep,
+  topsep=0pt,
+  parsep=0pt,
+  leftmargin=1.5em,
+  label=\textbullet
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1pt}
+
+\begin{document}
+
+\begin{center}
+  {\Large \textbf{Eshaan Saini}} \\[2pt]
+  {\small eshaansaini2004@gmail.com $|$ \href{https://linkedin.com/in/eshaan2004}{linkedin.com/in/eshaan2004} $|$ \href{https://github.com/eshaansaini2004}{github.com/eshaansaini2004} $|$ \href{https://eshaan-portfolio-ten.vercel.app}{eshaan-portfolio-ten.vercel.app}}
+\end{center}
+
+\vspace{1pt}
+
+\section{EDUCATION}
+\textbf{Texas A\&M University}, College Station, TX \hfill Aug 2023 -- Dec 2026 \\
+\textit{B.S. Computer Science, Minor in Cyber Security} \\
+\textbf{GPA: 4.0} and \textbf{Dean's Honor Roll} (4 semesters) \\
+\textbf{Relevant Coursework:} Data Structures, Operating Systems, Analysis of Algorithms, Cloud Computing, Databases, Software Engineering, Computer and Network Security
+
+\section{TECHNICAL SKILLS AND CERTIFICATIONS}
+\begin{itemize}
+  \item \textbf{Python}, \textbf{Java}, \textbf{C++}, \textbf{TypeScript}, \textbf{Go}, JavaScript, SQL, R, Haskell, React, Next.js, Angular, Node.js, Express, FastAPI, Flask, PyTorch, scikit-learn, Tailwind CSS, Git, Docker, AWS (RDS, S3, Cognito, EC2), PostgreSQL, MongoDB, Cypress, Linux, Nginx
+  \item Building AI Agents with RAG and LangChain by IBM; Model Context Protocol by Anthropic; Machine Learning by Andrew Ng Stanford, Python for Data Science, AI and Development by IBM
+\end{itemize}
+
+\section{EXPERIENCE}
+
+\textbf{IBM} -- \textit{Backend Development Intern}, Austin, TX \hfill May 2026 -- Aug 2026
+\begin{itemize}
+  \item Building an \textbf{MCP server} in \textbf{Go} over the \textbf{IBM Cloud Logs API} spanning all \textbf{13 geo-distributed PowerVS} log environments (12 production regions plus staging); collapses a cross-region investigation that previously required 13 separately authenticated API calls into a single tool call, retrieving logs roughly \textbf{3x faster}
+  \item Developing an \textbf{AI-native diagnostic agent} that runs log queries through the MCP server and generates structured \textbf{root-cause analysis} reports, cutting Level 3 incident triage time \textbf{50\%} versus manual evidence gathering
+  \item Designing a \textbf{RAG} knowledge base over anonymized historical support cases so the agent surfaces similar past incidents during live diagnosis
+\end{itemize}
+
+\textbf{H-E-B} -- \textit{Software Development Intern}, San Antonio, TX \hfill June 2025 -- Aug 2025
+\begin{itemize}
+  \item Created \textbf{8 Cypress} automated end-to-end tests covering counterfeit coupon workflows (create, update, delete) in the H-E-B Coupon Creation modal, reducing manual testing time before deployment
+  \item Modified \textbf{Angular} frontend components to fix bugs in the Counterfeit Coupons tab and built \textbf{REST API} endpoints for secure, efficient data access during testing workflows
+  \item Spearheaded an overhaul of the engineering onboarding process by auditing docs, removing redundant steps, and producing updated documentation, leading to a \textbf{50\% increase} in onboarding efficiency
+\end{itemize}
+
+\textbf{Vector Edge} -- \textit{Software Development Intern}, Austin, TX \hfill June 2024 -- July 2024
+\begin{itemize}
+  \item Implemented \textbf{Google RE2} regex and the \textbf{Aho-Corasick Algorithm} within a classification SDK to identify \textbf{PII, PFI, and PHI} across large text datasets, matching every sensitive-data pattern in a single linear pass
+  \item Built a context-based evaluation layer that assigns confidence scores to sensitive-keyword matches, improving detection accuracy by over \textbf{40\%}
+  \item Contributed to porting the SDK from \textbf{Windows} to \textbf{macOS/Linux}, expanding the addressable client base by \textbf{10\%}
+\end{itemize}
+
+\textbf{Texas A\&M University} -- \textit{Peer Teacher}, College Station, TX \hfill Aug 2025 -- Present
+\begin{itemize}
+  \item Lead weekly lab sessions for \textbf{30+ students} in \textbf{Honors Computer Architecture} and Computer Systems, holding office hours for individualized support on low-level concepts
+  \item Tutor students 1-on-1 in \textbf{Data Structures}, covering trees, graphs, hash maps, and algorithm complexity; collaborate with faculty to align lab content with lecture material
+\end{itemize}
+
+\section{PROJECTS | \small\normalfont(\href{https://github.com/eshaansaini2004}{github.com/eshaansaini2004})}
+\begin{itemize}
+  \item \textbf{Stackbox:} Built a commercial real estate intelligence platform (\textbf{Next.js}, \textbf{FastAPI}, \textbf{PostgreSQL}, \textbf{AWS}) with \textbf{25+} REST endpoints for full CRUD on buildings, tenants, and occupancies; implemented \textbf{AWS Cognito} JWT auth middleware and \textbf{Docker Compose} deployment for production-grade reliability
+  \item \textbf{Prompt Injection Firewall:} Built a drop-in \textbf{OpenAI-compatible} reverse proxy that detects and blocks prompt injection attacks via a two-layer AI-native detection engine (heuristic pass under \textbf{0.5ms}, semantic embedding fallback); covers \textbf{14 attack categories} from the OWASP LLM Top 10, validated by \textbf{41 automated tests}, with a live \textbf{WebSocket} monitoring dashboard
+  \item \textbf{ShareTea POS:} Led a \textbf{5-member} team to build and deploy a full-stack point-of-sale system in \textbf{under 4 weeks}; \textbf{AWS}-hosted \textbf{PostgreSQL} database with \textbf{90,000+} entries, role-based access, and a self-hosted production deployment pipeline via \textbf{Nginx} reverse proxy and \textbf{pm2} process monitoring
+  \item \textbf{Code Cartographer:} Built an AI-powered codebase analysis tool (\textbf{Python}, \textbf{Flask}, \textbf{Google Gemini API}) at HackTX 2025 with a real-time \textbf{WebSocket} dashboard processing \textbf{50+ files}, interactive dependency graphs, and a \textbf{VS Code extension} for in-editor AI-assisted analysis
+  \item \textbf{LeopardWorks:} Built a \textbf{Discord} bot adopted by \textbf{30--35 TAMU students} for course planning; \textit{/lookup} aggregates professor GPA distributions and live section availability from multiple scraped sources, while \textit{/select} automates \textbf{Howdy} registration via headless \textbf{Playwright} with \textbf{Duo MFA} support
+\end{itemize}
+
+\end{document}
