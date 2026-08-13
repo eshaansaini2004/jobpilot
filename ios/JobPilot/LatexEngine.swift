@@ -75,7 +75,25 @@ final class LatexEngine: NSObject, WKScriptMessageHandler, WKNavigationDelegate 
         return try await task.value
     }
 
-    private func _compile(tex: String) async throws -> Data {
+    // The trimmed on-device texmf lacks glyphs for a few text commands the LLM
+    // sometimes emits. Map them to the math/ligature forms the bundled cm fonts do
+    // render (same forms the gold template uses). Deterministic guard so a compile
+    // never dies on \textbar / \textendash even when the prompt rule doesn't hold.
+    private func sanitizeForBusytex(_ tex: String) -> String {
+        var t = tex
+        t = t.replacingOccurrences(of: "\\textbar{}", with: "$|$")
+        t = t.replacingOccurrences(of: "\\textbar", with: "$|$")
+        t = t.replacingOccurrences(of: "\\textendash", with: "--")
+        t = t.replacingOccurrences(of: "\\textemdash", with: "---")
+        // A \small-shrunk bullet pulls in the TS1 font at 9pt (tcrm0900), which the
+        // trimmed tree doesn't carry. Keep the bullet at document size (tcrm1000).
+        t = t.replacingOccurrences(of: "{\\small\\textbullet}", with: "\\textbullet")
+        t = t.replacingOccurrences(of: "\\small\\textbullet", with: "\\textbullet")
+        return t
+    }
+
+    private func _compile(tex rawTex: String) async throws -> Data {
+        let tex = sanitizeForBusytex(rawTex)
         try await waitUntilReady()
         let arg = String(data: try JSONEncoder().encode(tex), encoding: .utf8)!  // safe JS string literal
         let watchdog = Task { [weak self] in

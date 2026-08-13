@@ -10,3 +10,6 @@ worker/node_modules/
 # Secrets / local
 worker/.dev.vars
 .wrangler/
+
+# Demo build artifacts
+ios/demo-frames/

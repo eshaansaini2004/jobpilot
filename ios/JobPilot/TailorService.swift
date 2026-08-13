@@ -64,6 +64,9 @@ final class TailorService: NSObject, WKNavigationDelegate {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // The pipeline can run two LLM calls (draft + corrective pass), which
+        // exceeds URLSession's 60s default. Give it room.
+        req.timeoutInterval = 150
         req.httpBody = try JSONSerialization.data(withJSONObject: ["jd": jd])
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
