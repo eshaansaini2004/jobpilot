@@ -67,16 +67,30 @@ const yoeCases: [string, boolean][] = [
   // (no "+"/"minimum") isn't matched at all -- see the "Requires 4-8 years" case.
   ["3+ years experience, OR a Master's degree with a minimum of 1 year of experience", false],
   // Soft-qualifier phrasing: a stated floor that's explicitly a nice-to-have,
-  // not a requirement -- shouldn't disqualify a new grad who lacks it.
+  // not a requirement -- shouldn't disqualify a new grad who lacks it. Each of
+  // these must actually hit the primary N-years-...-experience regex, or the
+  // test passes for the wrong reason (no match at all) and doesn't exercise
+  // SOFT_QUALIFIER/clauseAround -- caught in review, see the two below.
   ["2+ years of experience with Python preferred", false],
   ["Preferred: 3+ years of experience in distributed systems", false],
-  ["Experience with Kubernetes (2+ years) is a plus", false],
-  ["Prior internship experience is a bonus but not required", false],
+  ["Kubernetes: 2+ years of experience is a plus", false],
+  ["3+ years of prior experience is a bonus but not required for internship applicants", false],
   // But a hard requirement elsewhere in the same JD still drops it even if
   // another line happens to be a soft qualifier.
   [
     "5+ years of experience required. 2+ years of experience with Python preferred.",
     true,
+  ],
+  // "plus" as a plain connective ("X, plus Y") is not the "is a plus" idiom --
+  // must still DROP. Regression for a review finding on the first cut of this.
+  ["3+ years of experience, plus a strong understanding of algorithms and data structures", true],
+  // Long HTML bullet list: "</li>" must become a clause boundary (not collapse
+  // to a space) and the clause window must be wide enough to still reach a
+  // trailing "(nice to have, not required)" past a long comma-separated bullet.
+  // Regression for a review finding on the first cut of this.
+  [
+    "<ul><li>2+ years of experience with distributed systems, microservices, containerization, CI/CD, and cloud platforms (nice to have, not required)</li><li>Bachelor's in CS or related field</li></ul>",
+    false,
   ],
   ["", false],
 ];

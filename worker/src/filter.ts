@@ -34,9 +34,13 @@ const US_HINT =
 const YOE_DROP_AT = 2;
 
 // Decode the few HTML entities greenhouse content carries and strip tags, so
-// "5&#43;&nbsp;years" reads the same as lever's plain "5+ years".
+// "5&#43;&nbsp;years" reads the same as lever's plain "5+ years". Block/list
+// boundaries become newlines BEFORE the generic tag strip -- otherwise
+// "</li><li>" collapses to a single space and an entire bullet list reads as
+// one run-on clause, which starves clauseAround() of a real boundary to stop at.
 function plainText(s: string): string {
   return s
+    .replace(/<\/?(?:li|p|div|br|tr|h[1-6])[^>]*>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&#43;/g, "+")
     .replace(/&nbsp;/g, " ")
@@ -46,20 +50,26 @@ function plainText(s: string): string {
 }
 
 // Soft-qualifier language ("Python experience preferred", "2+ years is a
-// plus"). A match whose surrounding clause carries one of these isn't a hard
-// floor, so it shouldn't count against a new grad who lacks it.
-const SOFT_QUALIFIER = /preferred|nice.to.have|\bplus\b|bonus|desired|ideally|not required/i;
+// plus", "minimum 2 years, or equivalent for recent grads"). A match whose
+// surrounding clause carries one of these isn't a hard floor, so it shouldn't
+// count against a new grad who lacks it.
+// "a plus" (not bare "plus") -- "plus" alone is also a common connective
+// ("3+ years, plus knowledge of Kubernetes"), which is NOT a soft signal.
+const SOFT_QUALIFIER =
+  /preferred|nice.to.have|\ba\s+plus\b|bonus|desired|ideally|not required|recent grad|new grad|for graduates/i;
 
-// The sentence/clause containing [start, end), capped at 60 chars each side so
-// a run-on paragraph with no punctuation can't pull in unrelated text.
+// The sentence/clause containing [start, end). Bounded by the nearest "."/"\n"
+// (list items become "\n" in plainText above), with a generous 150-char
+// backstop each side so one comma-separated bullet with no internal
+// punctuation still keeps its trailing "(nice to have)" in view.
 function clauseAround(text: string, start: number, end: number): string {
   let from = start;
-  for (let i = start - 1; i >= Math.max(0, start - 60); i--) {
+  for (let i = start - 1; i >= Math.max(0, start - 150); i--) {
     if (text[i] === "." || text[i] === "\n") break;
     from = i;
   }
   let to = end;
-  for (let i = end; i < Math.min(text.length, end + 60); i++) {
+  for (let i = end; i < Math.min(text.length, end + 150); i++) {
     if (text[i] === "." || text[i] === "\n") break;
     to = i + 1;
   }
