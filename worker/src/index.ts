@@ -77,10 +77,18 @@ async function runCycle(env: Env): Promise<number> {
     return 0;
   }
 
+  // Ids went into `seen` above, so an unsent job is lost unless it lands back in
+  // pending. Write the failures unconditionally: the old `if (pending.length)`
+  // clear dropped anything Discord rejected, and dropped `relevant` outright
+  // (those were never in pending to begin with).
   const toSend = [...pending, ...relevant];
-  const sent = await postJobs(toSend, env);
-  if (pending.length) await env.JOBS_KV.put(PENDING_KEY, "[]");
-  console.log(`cycle: ${total} live, ${fresh.length} new, ${relevant.length} relevant, ${sent} sent`);
+  const { sent, failed } = await postJobs(toSend, env);
+  if (failed.length || pending.length) {
+    await env.JOBS_KV.put(PENDING_KEY, JSON.stringify(failed));
+  }
+  console.log(
+    `cycle: ${total} live, ${fresh.length} new, ${relevant.length} relevant, ${sent} sent, ${failed.length} requeued`,
+  );
   return sent;
 }
 
@@ -115,9 +123,12 @@ async function runTier3Cycle(env: Env): Promise<number> {
 
   const blocked = new Set(BLOCKED_COMPANIES.map((c) => c.toLowerCase()));
   const relevant = filterJobs(established, { blockedCompanies: blocked });
-  const sent = await postJobs(relevant, env);
+  // ponytail: tier 3 has no pending queue, so a failed send is dropped. It only
+  // runs outside quiet hours and re-renders on rotation, so the job resurfaces.
+  // Give it the tier-1 requeue if that stops being true.
+  const { sent, failed } = await postJobs(relevant, env);
   console.log(
-    `tier3: rendered [${rendered.join(",")}], ${fresh.length} new, seeded [${firstSight.join(",") || "none"}], ${relevant.length} relevant, ${sent} sent`,
+    `tier3: rendered [${rendered.join(",")}], ${fresh.length} new, seeded [${firstSight.join(",") || "none"}], ${relevant.length} relevant, ${sent} sent, ${failed.length} dropped`,
   );
   return sent;
 }
