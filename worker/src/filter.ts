@@ -27,20 +27,53 @@ const NON_US =
 const US_HINT =
   /\b(united states|usa|u\.s\.?|remote|washington,?\s*d\.?c\.?|\bd\.c\.\b)\b|,\s*[A-Z]{2}\b/i;
 
-// Minimum years-of-experience at or above which a role is not new-grad. No real
-// new-grad posting states a 4+ year floor, so this never drops a genuine one.
-const YOE_DROP_AT = 4;
+// Minimum years-of-experience at or above which a role is not new-grad.
+// Was 4, but Apple/Meta "new grad" cards turned up with 2+/3+ year floors in the
+// quals text, so the real-world senior/mid floor starts lower than assumed.
+// 2 still keeps genuine entry postings that cite "1+ years (internships count)".
+const YOE_DROP_AT = 2;
 
 // Decode the few HTML entities greenhouse content carries and strip tags, so
-// "5&#43;&nbsp;years" reads the same as lever's plain "5+ years".
+// "5&#43;&nbsp;years" reads the same as lever's plain "5+ years". Block/list
+// boundaries become newlines BEFORE the generic tag strip -- otherwise
+// "</li><li>" collapses to a single space and an entire bullet list reads as
+// one run-on clause, which starves clauseAround() of a real boundary to stop at.
 function plainText(s: string): string {
   return s
+    .replace(/<\/?(?:li|p|div|br|tr|h[1-6])[^>]*>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&#43;/g, "+")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
+}
+
+// Soft-qualifier language ("Python experience preferred", "2+ years is a
+// plus", "minimum 2 years, or equivalent for recent grads"). A match whose
+// surrounding clause carries one of these isn't a hard floor, so it shouldn't
+// count against a new grad who lacks it.
+// "a plus" (not bare "plus") -- "plus" alone is also a common connective
+// ("3+ years, plus knowledge of Kubernetes"), which is NOT a soft signal.
+const SOFT_QUALIFIER =
+  /preferred|nice.to.have|\ba\s+plus\b|bonus|desired|ideally|not required|recent grad|new grad|for graduates/i;
+
+// The sentence/clause containing [start, end). Bounded by the nearest "."/"\n"
+// (list items become "\n" in plainText above), with a generous 150-char
+// backstop each side so one comma-separated bullet with no internal
+// punctuation still keeps its trailing "(nice to have)" in view.
+function clauseAround(text: string, start: number, end: number): string {
+  let from = start;
+  for (let i = start - 1; i >= Math.max(0, start - 150); i--) {
+    if (text[i] === "." || text[i] === "\n") break;
+    from = i;
+  }
+  let to = end;
+  for (let i = end; i < Math.min(text.length, end + 150); i++) {
+    if (text[i] === "." || text[i] === "\n") break;
+    to = i + 1;
+  }
+  return text.slice(from, to);
 }
 
 // True when the description states a required experience floor >= YOE_DROP_AT.
@@ -55,6 +88,7 @@ export function demandsSeniorExperience(description?: string): boolean {
   let min = Infinity;
   for (const m of text.matchAll(re)) {
     const n = Number(m[1] ?? m[2]);
+    if (SOFT_QUALIFIER.test(clauseAround(text, m.index, m.index + m[0].length))) continue;
     if (n < min) min = n;
   }
   return Number.isFinite(min) && min >= YOE_DROP_AT;

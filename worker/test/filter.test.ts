@@ -43,12 +43,13 @@ if (!unitOk) {
 // Years-of-experience gate. Priority: NEVER drop a real new grad; letting some
 // senior roles through is fine. So `true` = drop (clearly senior), `false` = keep.
 const yoeCases: [string, boolean][] = [
-  // Should DROP — clear senior floor >= 4
+  // Should DROP — clear senior floor >= 2
   ["Basic Qualifications: 5+ years of professional software development experience", true],
   ["Minimum of 6 years of experience building distributed systems", true],
   ["At least 4 years of industry experience", true],
   ["8+ years of software development experience", true],
   ["5&#43;&nbsp;years of experience with <b>Java</b>", true], // greenhouse HTML shape
+  ["Minimum 3 years of experience", true], // Apple/Meta-shaped false positive we saw in prod
   // Bare ranges ("4-8 years") have no "+"/"minimum" floor marker, so they LEAK
   // through rather than risk a false drop. Accepted per priority: never lose a
   // new grad. Add floor-based range matching later if these get noisy.
@@ -56,13 +57,41 @@ const yoeCases: [string, boolean][] = [
   // Should KEEP — genuine new grad / early career
   ["0-2 years of experience", false],
   ["1-3 years of relevant experience", false],
-  ["2+ years of experience preferred", false], // early-career, keep
+  ["1+ years of experience (internships count)", false], // below the floor, keep
   ["Bachelor's degree in Computer Science; no experience required", false],
   ["New grad. Graduating in 2026. 0-1 years of experience.", false],
   ["Our team has 15 years of combined experience shipping products", false], // not a requirement floor
   ["Founded 12 years ago", false], // no "experience" anchor near number
-  // Mixed: senior floor present but a low-experience path also offered -> KEEP
-  ["3+ years experience, OR a Master's degree with 1 year of experience", false],
+  // Mixed: senior floor present but a low-experience path also offered -> KEEP.
+  // Needs a "minimum/at least" marker on the low side too, since bare "1 year"
+  // (no "+"/"minimum") isn't matched at all -- see the "Requires 4-8 years" case.
+  ["3+ years experience, OR a Master's degree with a minimum of 1 year of experience", false],
+  // Soft-qualifier phrasing: a stated floor that's explicitly a nice-to-have,
+  // not a requirement -- shouldn't disqualify a new grad who lacks it. Each of
+  // these must actually hit the primary N-years-...-experience regex, or the
+  // test passes for the wrong reason (no match at all) and doesn't exercise
+  // SOFT_QUALIFIER/clauseAround -- caught in review, see the two below.
+  ["2+ years of experience with Python preferred", false],
+  ["Preferred: 3+ years of experience in distributed systems", false],
+  ["Kubernetes: 2+ years of experience is a plus", false],
+  ["3+ years of prior experience is a bonus but not required for internship applicants", false],
+  // But a hard requirement elsewhere in the same JD still drops it even if
+  // another line happens to be a soft qualifier.
+  [
+    "5+ years of experience required. 2+ years of experience with Python preferred.",
+    true,
+  ],
+  // "plus" as a plain connective ("X, plus Y") is not the "is a plus" idiom --
+  // must still DROP. Regression for a review finding on the first cut of this.
+  ["3+ years of experience, plus a strong understanding of algorithms and data structures", true],
+  // Long HTML bullet list: "</li>" must become a clause boundary (not collapse
+  // to a space) and the clause window must be wide enough to still reach a
+  // trailing "(nice to have, not required)" past a long comma-separated bullet.
+  // Regression for a review finding on the first cut of this.
+  [
+    "<ul><li>2+ years of experience with distributed systems, microservices, containerization, CI/CD, and cloud platforms (nice to have, not required)</li><li>Bachelor's in CS or related field</li></ul>",
+    false,
+  ],
   ["", false],
 ];
 let yoeOk = true;
