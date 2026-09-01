@@ -55,8 +55,12 @@ function plainText(s: string): string {
 // count against a new grad who lacks it.
 // "a plus" (not bare "plus") -- "plus" alone is also a common connective
 // ("3+ years, plus knowledge of Kubernetes"), which is NOT a soft signal.
+// No grad wording here on purpose: "new grad"/"recent grad" is a role LABEL,
+// and the Apple/Meta postings this gate exists to catch carry that label right
+// next to a hard floor. Same for "or equivalent" -- in practice it reads
+// "3+ years of experience (or equivalent)", which is still a hard floor.
 const SOFT_QUALIFIER =
-  /preferred|nice.to.have|\ba\s+plus\b|bonus|desired|ideally|not required|recent grad|new grad|for graduates/i;
+  /preferred|nice.to.have|\ba\s+plus\b|bonus|desired|ideally|not required/i;
 
 // The sentence/clause containing [start, end). Bounded by the nearest "."/"\n"
 // (list items become "\n" in plainText above), with a generous 150-char

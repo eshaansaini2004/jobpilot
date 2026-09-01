@@ -84,6 +84,13 @@ const yoeCases: [string, boolean][] = [
   // "plus" as a plain connective ("X, plus Y") is not the "is a plus" idiom --
   // must still DROP. Regression for a review finding on the first cut of this.
   ["3+ years of experience, plus a strong understanding of algorithms and data structures", true],
+  // A "new grad"/"recent grad" LABEL next to a hard floor is exactly the posting
+  // shape this gate exists for, so grad wording alone is not a soft qualifier.
+  // Nor is "or equivalent" -- live Ramp/Scale postings phrase a real mid-level
+  // floor as "3+ years of software engineering experience (or equivalent)".
+  ["New Grad Software Engineer -- this role requires 5+ years of experience", true],
+  ["Recent grad program, minimum 4 years of experience required", true],
+  ["3+ years of software engineering experience (or equivalent)", true],
   // Long HTML bullet list: "</li>" must become a clause boundary (not collapse
   // to a space) and the clause window must be wide enough to still reach a
   // trailing "(nice to have, not required)" past a long comma-separated bullet.
