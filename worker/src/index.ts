@@ -3,7 +3,7 @@ import { tier3Sweep } from "./tier3.ts";
 import { filterJobs } from "./filter.ts";
 import { isQuietHours } from "./quiet.ts";
 import { postJobs, type DiscordEnv } from "./discord.ts";
-import { BLOCKED_COMPANIES, REGISTRY } from "./registry.ts";
+import { BLOCKED_COMPANIES, PEOPLE, REGISTRY, type Person } from "./registry.ts";
 import { generateTex, trimTex } from "./generate.ts";
 import type { LlmEnv } from "./llm.ts";
 import type { Job } from "./types.ts";
@@ -32,6 +32,17 @@ const SEEN_TIER3_KEY = "seen_ids_tier3";
 const SEEDED_KEY = "tier3_seeded"; // company names whose first batch was already absorbed
 const CURSOR_KEY = "tier3_cursor";
 const TIER3_CRON = "30 */2 * * *";
+
+// Look up a person's Discord channel ID from the setting named in their channelVar.
+function channelFor(person: Person, env: Env): string | undefined {
+  return (env as unknown as Record<string, string | undefined>)[person.channelVar];
+}
+
+// Each person has their own overnight queue. The main channel keeps the original
+// key so anything already queued for Ishan before this change isn't lost.
+function pendingKeyFor(person: Person): string {
+  return person.channelVar === "DISCORD_CHANNEL_ID" ? PENDING_KEY : `${PENDING_KEY}_${person.name.toLowerCase()}`;
+}
 
 async function runCycle(env: Env): Promise<number> {
   const rawSeen = await env.JOBS_KV.get(SEEN_KEY);
@@ -65,31 +76,41 @@ async function runCycle(env: Env): Promise<number> {
   const established = fresh.filter((j) => !firstSet.has(j.company));
 
   const blocked = new Set(BLOCKED_COMPANIES.map((c) => c.toLowerCase()));
-  const relevant = filterJobs(established, { blockedCompanies: blocked });
+  let totalSent = 0;
 
-  const pending: Job[] = JSON.parse((await env.JOBS_KV.get(PENDING_KEY)) ?? "[]");
+  // Each person gets their own filter, channel, and overnight queue.
+  for (const person of PEOPLE) {
+    const relevant = filterJobs(established, {
+      blockedCompanies: blocked,
+      yoeDropAt: person.yoeDropAt,
+      allowSeniorTitles: person.allowSeniorTitles,
+    });
+    const pendingKey = pendingKeyFor(person);
+    const pending: Job[] = JSON.parse((await env.JOBS_KV.get(pendingKey)) ?? "[]");
 
-  if (isQuietHours()) {
-    if (relevant.length) {
-      await env.JOBS_KV.put(PENDING_KEY, JSON.stringify([...pending, ...relevant]));
+    if (isQuietHours()) {
+      if (relevant.length) {
+        await env.JOBS_KV.put(pendingKey, JSON.stringify([...pending, ...relevant]));
+      }
+      console.log(`${person.name}: quiet hours: queued ${relevant.length}, ${pending.length + relevant.length} pending`);
+      continue;
     }
-    console.log(`quiet hours: queued ${relevant.length}, ${pending.length + relevant.length} pending`);
-    return 0;
-  }
 
-  // Ids went into `seen` above, so an unsent job is lost unless it lands back in
-  // pending. Write the failures unconditionally: the old `if (pending.length)`
-  // clear dropped anything Discord rejected, and dropped `relevant` outright
-  // (those were never in pending to begin with).
-  const toSend = [...pending, ...relevant];
-  const { sent, failed } = await postJobs(toSend, env);
-  if (failed.length || pending.length) {
-    await env.JOBS_KV.put(PENDING_KEY, JSON.stringify(failed));
+    // Ids went into `seen` above, so an unsent job is lost unless it lands back in
+    // pending. Write the failures unconditionally: the old `if (pending.length)`
+    // clear dropped anything Discord rejected, and dropped `relevant` outright
+    // (those were never in pending to begin with).
+    const toSend = [...pending, ...relevant];
+    const { sent, failed } = await postJobs(toSend, env, fetch, channelFor(person, env));
+    if (failed.length || pending.length) {
+      await env.JOBS_KV.put(pendingKey, JSON.stringify(failed));
+    }
+    console.log(
+      `${person.name}: cycle: ${total} live, ${fresh.length} new, ${relevant.length} relevant, ${sent} sent, ${failed.length} requeued`,
+    );
+    totalSent += sent;
   }
-  console.log(
-    `cycle: ${total} live, ${fresh.length} new, ${relevant.length} relevant, ${sent} sent, ${failed.length} requeued`,
-  );
-  return sent;
+  return totalSent;
 }
 
 // Tier-3 cycle: render a round-robin slice, diff by id, post through the same
@@ -122,15 +143,25 @@ async function runTier3Cycle(env: Env): Promise<number> {
   const established = fresh.filter((j) => !firstSet.has(j.company));
 
   const blocked = new Set(BLOCKED_COMPANIES.map((c) => c.toLowerCase()));
-  const relevant = filterJobs(established, { blockedCompanies: blocked });
-  // ponytail: tier 3 has no pending queue, so a failed send is dropped. It only
-  // runs outside quiet hours and re-renders on rotation, so the job resurfaces.
-  // Give it the tier-1 requeue if that stops being true.
-  const { sent, failed } = await postJobs(relevant, env);
-  console.log(
-    `tier3: rendered [${rendered.join(",")}], ${fresh.length} new, seeded [${firstSight.join(",") || "none"}], ${relevant.length} relevant, ${sent} sent, ${failed.length} dropped`,
-  );
-  return sent;
+  let totalSent = 0;
+
+  // Same per-person filter and channel as the hourly run.
+  for (const person of PEOPLE) {
+    const relevant = filterJobs(established, {
+      blockedCompanies: blocked,
+      yoeDropAt: person.yoeDropAt,
+      allowSeniorTitles: person.allowSeniorTitles,
+    });
+    // ponytail: tier 3 has no pending queue, so a failed send is dropped. It only
+    // runs outside quiet hours and re-renders on rotation, so the job resurfaces.
+    // Give it the tier-1 requeue if that stops being true.
+    const { sent, failed } = await postJobs(relevant, env, fetch, channelFor(person, env));
+    console.log(
+      `${person.name}: tier3: rendered [${rendered.join(",")}], ${fresh.length} new, seeded [${firstSight.join(",") || "none"}], ${relevant.length} relevant, ${sent} sent, ${failed.length} dropped`,
+    );
+    totalSent += sent;
+  }
+  return totalSent;
 }
 
 export default {

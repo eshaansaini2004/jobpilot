@@ -12,12 +12,17 @@ import type { Job } from "./types.ts";
 const INCLUDE_TITLE =
   /software engineer\b|software developer\b|\bswe\b|full.?stack|back.?end|front.?end|backend|frontend|machine learning engineer\b|\bml engineer\b|infrastructure engineer\b|platform engineer\b|mobile engineer\b|ios engineer\b|android engineer\b|web developer\b|member of technical staff/i;
 
-// Seniority, non-new-grad, and non-software-domain signals.
+// Seniority signals. Skipped for people whose filter allows senior titles.
 // - (?<!technical )staff keeps "Member of Technical Staff" while dropping "Staff Engineer".
+// - Also catches level numbers like "Engineer II", "SDE 3", "(L4)".
+const SENIOR_TITLE =
+  /senior|(?<!technical )staff|principal|\blead\b|architect|\bsr\.?\b|\b(?:engineer(?:ing)?|sde|developer)\s*l?\s*(?:iii|ii|iv|vi|v|[2-9])\b|\(l?\s*[2-9]\)/i;
+
+// Always dropped, for everyone: people-management, internships, and non-software roles.
 // - \bintern(ship)? matches "intern"/"internship" but not "internal".
 // - finance/sales/etc. drop non-software roles that slip past the title include.
-const EXCLUDE_TITLE =
-  /senior|(?<!technical )staff|principal|\blead\b|manager|director|head of|\bvp\b|vice president|architect|\bsr\.?\b|\bintern(ship)?\b|fellowship|finance|accounting|\bsales\b|marketing|recruit|solutions engineer|support engineer|\b(?:engineer(?:ing)?|sde|developer)\s*l?\s*(?:iii|ii|iv|vi|v|[2-9])\b|\(l?\s*[2-9]\)/i;
+const ALWAYS_EXCLUDE_TITLE =
+  /manager|director|head of|\bvp\b|vice president|\bintern(ship)?\b|fellowship|finance|accounting|\bsales\b|marketing|recruit|solutions engineer|support engineer/i;
 
 // Obvious non-US locations. Drop on match.
 const NON_US =
@@ -84,7 +89,7 @@ function clauseAround(text: string, start: number, end: number): string {
 // Only matches requirement-shaped phrasings ("N+ years ... experience",
 // "minimum/at least N years ... experience") and takes the SMALLEST floor found,
 // so a JD offering any low-experience path is kept. Errs toward keeping.
-export function demandsSeniorExperience(description?: string): boolean {
+export function demandsSeniorExperience(description?: string, dropAt: number = YOE_DROP_AT): boolean {
   if (!description) return false;
   const text = plainText(description);
   const re =
@@ -95,11 +100,13 @@ export function demandsSeniorExperience(description?: string): boolean {
     if (SOFT_QUALIFIER.test(clauseAround(text, m.index, m.index + m[0].length))) continue;
     if (n < min) min = n;
   }
-  return Number.isFinite(min) && min >= YOE_DROP_AT;
+  return Number.isFinite(min) && min >= dropAt;
 }
 
 export interface Filters {
   blockedCompanies: Set<string>; // volume spammers, lowercased
+  yoeDropAt?: number; // drop jobs asking for this many years or more (default 2)
+  allowSeniorTitles?: boolean; // keep Senior/Staff/Lead/Engineer II titles (default false)
 }
 
 export function isRelevant(job: Job, f: Filters): boolean {
@@ -107,7 +114,8 @@ export function isRelevant(job: Job, f: Filters): boolean {
 
   const title = job.title ?? "";
   if (!INCLUDE_TITLE.test(title)) return false;
-  if (EXCLUDE_TITLE.test(title)) return false;
+  if (ALWAYS_EXCLUDE_TITLE.test(title)) return false;
+  if (!f.allowSeniorTitles && SENIOR_TITLE.test(title)) return false;
 
   const loc = job.location ?? "";
   if (NON_US.test(loc)) return false;
@@ -118,7 +126,7 @@ export function isRelevant(job: Job, f: Filters): boolean {
   // Last, on survivors only: a title-clean role whose quals demand 4+ years is
   // not new grad. Description is absent for browser/eightfold cards — those stay
   // title-only, which is the accepted ceiling.
-  if (demandsSeniorExperience(job.description)) return false;
+  if (demandsSeniorExperience(job.description, f.yoeDropAt ?? YOE_DROP_AT)) return false;
   return true;
 }
 

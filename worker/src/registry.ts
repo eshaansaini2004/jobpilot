@@ -101,3 +101,17 @@ export const TIER3: Company[] = [
 
 // Volume spammers to drop entirely (staffing firms, roles-farms). Lowercased match.
 export const BLOCKED_COMPANIES: string[] = [];
+
+// Who gets job alerts, and each person's filter rules.
+// channelVar names the wrangler.toml setting that holds their Discord channel ID.
+export interface Person {
+  name: string;
+  yoeDropAt: number; // drop jobs asking for this many years or more
+  allowSeniorTitles: boolean; // keep Senior/Staff/Lead/Engineer II titles
+  channelVar: string;
+}
+
+export const PEOPLE: Person[] = [
+  { name: "Ishan", yoeDropAt: 2, allowSeniorTitles: false, channelVar: "DISCORD_CHANNEL_ID" },
+  { name: "Geeta", yoeDropAt: 8, allowSeniorTitles: true, channelVar: "DISCORD_CHANNEL_ID_GEETA" },
+];

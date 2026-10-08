@@ -18,6 +18,8 @@ binding = "BROWSER"
 # DISCORD_BOT_TOKEN is a secret: `wrangler secret put DISCORD_BOT_TOKEN`
 WORKER_BASE = "https://jobpilot.esshaan.workers.dev"
 DISCORD_CHANNEL_ID = "1536749104938487879"
+# Geeta's job alerts (8+ years dropped, senior titles allowed).
+DISCORD_CHANNEL_ID_GEETA = "1557548590644072488"
 
 # A3 /generate — BYO-key LLM (owner-gated). Non-secret config here; the KEY is a
 # secret: `wrangler secret put LLM_API_KEY`. /generate returns 501 until it's set.
