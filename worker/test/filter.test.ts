@@ -1,5 +1,5 @@
 import { sweep } from "../src/sweep.ts";
-import { REGISTRY } from "../src/registry.ts";
+import { PEOPLE, REGISTRY } from "../src/registry.ts";
 import { filterJobs, isRelevant, demandsSeniorExperience } from "../src/filter.ts";
 import type { Job } from "../src/types.ts";
 
@@ -110,6 +110,38 @@ for (const [desc, want] of yoeCases) {
 }
 if (!yoeOk) {
   console.error("FAIL: YOE gate cases");
+  process.exit(1);
+}
+
+// Geeta's rules: senior titles allowed, only 8+ years dropped, management still out.
+const geeta = PEOPLE.find((p) => p.name === "Geeta")!;
+const geetaFilters = {
+  blockedCompanies: new Set<string>(),
+  yoeDropAt: geeta.yoeDropAt,
+  allowSeniorTitles: geeta.allowSeniorTitles,
+};
+const withDesc = (title: string, description: string): Job => ({ ...job(title, "Austin, TX"), description });
+const geetaCases: [Job, boolean][] = [
+  [job("Senior Software Engineer", "Austin, TX"), true], // senior title allowed
+  [job("Staff Backend Engineer", "Remote"), true],
+  [job("Software Engineer II", "Seattle, WA"), true], // level number allowed
+  [withDesc("Software Engineer", "5+ years of experience required"), true], // under 8
+  [withDesc("Software Engineer", "7+ years of experience required"), true], // under 8
+  [withDesc("Senior Software Engineer", "8+ years of experience required"), false], // 8 or more
+  [job("Engineering Manager, Backend", "Austin, TX"), false], // management still out
+  [job("Director of Software Engineering", "Austin, TX"), false],
+  [job("Software Engineer Intern", "Austin, TX"), false], // intern still out
+  [job("Senior Software Engineer", "London, United Kingdom"), false], // still US only
+];
+let geetaOk = true;
+for (const [j, want] of geetaCases) {
+  const got = isRelevant(j, geetaFilters);
+  const pass = got === want;
+  if (!pass) geetaOk = false;
+  console.log(`${pass ? "PASS" : "FAIL"} geeta want=${want} got=${got}  "${j.title}"`);
+}
+if (!geetaOk) {
+  console.error("FAIL: Geeta filter cases");
   process.exit(1);
 }
 

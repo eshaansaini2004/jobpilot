@@ -49,8 +49,10 @@ export async function postJobs(
   jobs: Job[],
   env: DiscordEnv,
   fetchImpl: typeof fetch = fetch,
+  // Which Discord channel to post to. Defaults to the main channel.
+  channelId: string | undefined = env.DISCORD_CHANNEL_ID,
 ): Promise<PostResult> {
-  if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_CHANNEL_ID) {
+  if (!env.DISCORD_BOT_TOKEN || !channelId) {
     console.log(`discord: no token/channel set, would have sent ${jobs.length}`);
     // Unconfigured is not a delivery failure — requeueing here would grow the
     // pending queue forever on a worker that simply has no Discord wired up.
@@ -63,7 +65,7 @@ export async function postJobs(
     const job = jobs[i];
     let res: Response;
     try {
-      res = await fetchImpl(`${API}/channels/${env.DISCORD_CHANNEL_ID}/messages`, {
+      res = await fetchImpl(`${API}/channels/${channelId}/messages`, {
         method: "POST",
         headers: {
           Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
