@@ -113,25 +113,45 @@ if (!yoeOk) {
   process.exit(1);
 }
 
-// Geeta's rules: senior titles allowed, only 8+ years dropped, management still out.
+// Geeta's rules: Austin or remote, her own title list (Java/backend, Forward
+// Deployed, TPM, Architect), technical manager titles allowed, never dropped on years.
 const geeta = PEOPLE.find((p) => p.name === "Geeta")!;
 const geetaFilters = {
   blockedCompanies: new Set<string>(),
   yoeDropAt: geeta.yoeDropAt,
   allowSeniorTitles: geeta.allowSeniorTitles,
+  locationMatch: geeta.locationMatch,
+  titleMatch: geeta.titleMatch,
+  allowedManagerTitles: geeta.allowedManagerTitles,
 };
 const withDesc = (title: string, description: string): Job => ({ ...job(title, "Austin, TX"), description });
 const geetaCases: [Job, boolean][] = [
-  [job("Senior Software Engineer", "Austin, TX"), true], // senior title allowed
+  // Location: Austin (any spelling of Texas) or remote; blank kept.
+  [job("Java Backend Developer", "Austin, TX"), true],
+  [job("Java Backend Developer", "Austin, Texas"), true],
+  [job("Java Backend Developer", "Hybrid - Austin"), true],
+  [job("Java Backend Developer", "Remote"), true],
+  [job("Java Backend Developer", ""), true], // no location listed
+  [job("Java Backend Developer", "Seattle, WA"), false], // not Austin or remote
+  [job("Java Backend Developer", "Remote - Canada"), false], // still US only
+  // Titles: her own list replaces the default.
+  [job("Senior Java Developer", "Austin, TX"), true], // senior title allowed
   [job("Staff Backend Engineer", "Remote"), true],
-  [job("Software Engineer II", "Seattle, WA"), true], // level number allowed
-  [withDesc("Software Engineer", "5+ years of experience required"), true], // under 8
-  [withDesc("Software Engineer", "7+ years of experience required"), true], // under 8
-  [withDesc("Senior Software Engineer", "8+ years of experience required"), false], // 8 or more
-  [job("Engineering Manager, Backend", "Austin, TX"), false], // management still out
-  [job("Director of Software Engineering", "Austin, TX"), false],
-  [job("Software Engineer Intern", "Austin, TX"), false], // intern still out
-  [job("Senior Software Engineer", "London, United Kingdom"), false], // still US only
+  [job("Forward Deployed Engineer", "Austin, TX"), true],
+  [job("Solutions Architect", "Austin, TX"), true],
+  [job("Senior Software Engineer", "Austin, TX"), false], // not on her list
+  [job("Frontend Engineer", "Austin, TX"), false],
+  [job("JavaScript Developer", "Austin, TX"), false], // "Java" must be a whole word
+  // Manager titles: TPM and Engineering Manager allowed, other management still out.
+  [job("Technical Program Manager", "Austin, TX"), true],
+  [job("Program Manager, Technical", "Remote"), true],
+  [job("Engineering Manager, Backend", "Austin, TX"), true],
+  [job("Engineering Manager, Frontend", "Austin, TX"), false], // not on her title list
+  [job("Director of Backend Engineering", "Austin, TX"), false],
+  [job("Technical Program Manager Intern", "Austin, TX"), false], // intern still out
+  // Years of experience: never dropped.
+  [withDesc("Backend Engineer", "7+ years of experience required"), true],
+  [withDesc("Senior Backend Engineer", "15+ years of experience required"), true],
 ];
 let geetaOk = true;
 for (const [j, want] of geetaCases) {

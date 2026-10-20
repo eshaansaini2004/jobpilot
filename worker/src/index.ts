@@ -84,6 +84,9 @@ async function runCycle(env: Env): Promise<number> {
       blockedCompanies: blocked,
       yoeDropAt: person.yoeDropAt,
       allowSeniorTitles: person.allowSeniorTitles,
+      locationMatch: person.locationMatch,
+      titleMatch: person.titleMatch,
+      allowedManagerTitles: person.allowedManagerTitles,
     });
     const pendingKey = pendingKeyFor(person);
     const pending: Job[] = JSON.parse((await env.JOBS_KV.get(pendingKey)) ?? "[]");
@@ -151,6 +154,9 @@ async function runTier3Cycle(env: Env): Promise<number> {
       blockedCompanies: blocked,
       yoeDropAt: person.yoeDropAt,
       allowSeniorTitles: person.allowSeniorTitles,
+      locationMatch: person.locationMatch,
+      titleMatch: person.titleMatch,
+      allowedManagerTitles: person.allowedManagerTitles,
     });
     // ponytail: tier 3 has no pending queue, so a failed send is dropped. It only
     // runs outside quiet hours and re-renders on rotation, so the job resurfaces.
