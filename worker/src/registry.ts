@@ -108,10 +108,23 @@ export interface Person {
   name: string;
   yoeDropAt: number; // drop jobs asking for this many years or more
   allowSeniorTitles: boolean; // keep Senior/Staff/Lead/Engineer II titles
+  locationMatch?: RegExp; // if set, only keep jobs whose location matches
+  titleMatch?: RegExp; // if set, replaces the default software-engineer title list
+  allowedManagerTitles?: RegExp; // manager titles to keep despite the always-drop list
   channelVar: string;
 }
 
 export const PEOPLE: Person[] = [
   { name: "Ishan", yoeDropAt: 2, allowSeniorTitles: false, channelVar: "DISCORD_CHANNEL_ID" },
-  { name: "Geeta", yoeDropAt: 8, allowSeniorTitles: true, channelVar: "DISCORD_CHANNEL_ID_GEETA" },
+  // Geeta: Austin (on-site or hybrid) or remote only.
+  // Titles: Java/backend, Forward Deployed Engineer, Technical Program Manager, Architect.
+  {
+    name: "Geeta",
+    yoeDropAt: Infinity, // never drop on years of experience
+    allowSeniorTitles: true,
+    locationMatch: /austin|remote/i,
+    titleMatch: /\bjava\b|back.?end|forward deployed|technical program manag|program manager,?\s*technical|\btpm\b|architect/i,
+    allowedManagerTitles: /technical program manager|program manager,?\s*technical|engineering manager/i,
+    channelVar: "DISCORD_CHANNEL_ID_GEETA",
+  },
 ];

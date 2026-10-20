@@ -107,21 +107,32 @@ export interface Filters {
   blockedCompanies: Set<string>; // volume spammers, lowercased
   yoeDropAt?: number; // drop jobs asking for this many years or more (default 2)
   allowSeniorTitles?: boolean; // keep Senior/Staff/Lead/Engineer II titles (default false)
+  locationMatch?: RegExp; // if set, only keep jobs whose location matches
+  titleMatch?: RegExp; // if set, replaces INCLUDE_TITLE
+  allowedManagerTitles?: RegExp; // manager titles to keep despite ALWAYS_EXCLUDE_TITLE
 }
 
 export function isRelevant(job: Job, f: Filters): boolean {
   if (f.blockedCompanies.has(job.company.toLowerCase())) return false;
 
   const title = job.title ?? "";
-  if (!INCLUDE_TITLE.test(title)) return false;
-  if (ALWAYS_EXCLUDE_TITLE.test(title)) return false;
+  // A person's own title list, if they have one, replaces the default.
+  const includeTitle = f.titleMatch ?? INCLUDE_TITLE;
+  if (!includeTitle.test(title)) return false;
+  // Remove an allowed manager phrase (e.g. "Technical Program Manager") before
+  // checking the always-drop list, so the rest of the title (e.g. "Intern") still counts.
+  const titleToCheck = f.allowedManagerTitles ? title.replace(f.allowedManagerTitles, "") : title;
+  if (ALWAYS_EXCLUDE_TITLE.test(titleToCheck)) return false;
   if (!f.allowSeniorTitles && SENIOR_TITLE.test(title)) return false;
 
   const loc = job.location ?? "";
   if (NON_US.test(loc)) return false;
   // Blank location is rare and usually a US HQ role; keep it. Anything with a
   // location must carry a US signal, else it's foreign noise we can't confirm.
-  if (loc && !US_HINT.test(loc)) return false;
+  // A match on the person's own location rule (e.g. "Austin") counts as US too.
+  if (loc && !US_HINT.test(loc) && !f.locationMatch?.test(loc)) return false;
+  // Per-person location rule (e.g. Austin or remote). Blank locations are kept.
+  if (loc && f.locationMatch && !f.locationMatch.test(loc)) return false;
 
   // Last, on survivors only: a title-clean role whose quals demand 4+ years is
   // not new grad. Description is absent for browser/eightfold cards — those stay
